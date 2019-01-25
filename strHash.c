@@ -83,7 +83,7 @@ int addHash(wordPair* wp, strHashTable* table){
             size_t temp = table->size;
             table->size *= 3;
             table->array = (collisionChain**)realloc(table->array,sizeof(collisionChain*)*table->size);
-            for(int i = temp; i < table->size; i++){
+            for(int i = temp-1; i < table->size; i++){
                 table->array[i] = NULL; // Set the new pointers to NULL.
             }
             // Rehash
