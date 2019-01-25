@@ -7,8 +7,7 @@
 
 // Word pair structure for counting occurrences of word pairs.
 typedef struct wordPair{
-    char* word1;
-    char* word2;
+    char* words;
     unsigned long freq;    
     unsigned long hash;
 } wordPair;
