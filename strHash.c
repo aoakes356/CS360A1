@@ -5,36 +5,20 @@
 #include <assert.h>
 #include "getWord.h"
 #include "crc64.h"
-/* This hash/prehash implementation is based on an MIT open course video 
- * (https://www.youtube.com/watch?v=0M_kIqhwbFo).
- * The probability of collision is 1/m in the worst case, where m is the size of
- * the table. The method is known as 'Universal Hashing'.
- * h(k) = [(a*k +b)mod p] mod m
- * This is not a perfect implementation though. To insure that k was unique for
- * each string, I would need a really big integer (More than unsigned long)
- * or a constrained word size of 8, so I made this wierd recursive thing just to test it out.
- * 
- */
 
-
-/*unsigned long prehash(char* string, unsigned long b, unsigned long tableSize){
-    if(*string == '\0') return b;
-    return prehash(string+1,((31*(*string) + b)%(1000000009))%tableSize, tableSize);
-
-    
-}*/
-
+// Just using the given hash function modulo table size.
 unsigned long long prehash(char* string, strHashTable* table){
     return crc64(string)%table->size;
 }
 
+// Initialize a new hash table, returns a pointer to said hash table.
 strHashTable* initHash(){
     strHashTable* new = (strHashTable*)malloc(sizeof(strHashTable));
     new->array = (collisionChain**)malloc(sizeof(collisionChain*)*INITIAL_TABLE_SIZE);
     for(int i = 0; i < INITIAL_TABLE_SIZE; i++){
-        new->array[i] = NULL;
+        new->array[i] = NULL;                   // Initialize table values to NULL.
     }
-    new->keys = newWordPairList();
+    new->keys = newWordPairList();  // use an expandable list of wordPairs to store all the keys for the table.
     assert(new != NULL && new->array != NULL && new->keys != NULL);  // Verify the memory was allocated. exit if not.
     new->used = 0;  // Number of elements filled in the array since the last resize.
     new->size = INITIAL_TABLE_SIZE;
@@ -60,7 +44,8 @@ int addHash(wordPair* wp, strHashTable* table){
         if(table->array[hash] != NULL){ // Collision case
             table->collisions++;
             addCollisionChainP(wp,&(table->array[hash]));
-            if(table->collisions > table->size){
+            if(collisionRate(table) > .01){
+                //printf("Resizing\n");  // Uncomment to see each time it resizes.
                 // resize and rehash.
                 int i = table->size;
                 table->size *= 3;
@@ -116,22 +101,6 @@ double collisionRate(strHashTable* table){
     
 }
 
-wordPair* getMax(strHashTable* table){
-    wordPair* max;
-    long unsigned maxCount = 0;
-    for(int i = 0; i < table->size; i++){
-        if(table->array[i] == NULL) continue;
-        collisionChain* current = table->array[i];
-        do{
-            if(current->pair->freq> maxCount){
-                maxCount = current->pair->freq;
-                max = current->pair;
-            }
-        }while((current = current->next) != NULL);
-    }
-    return max;
-}
-
 wordPair* getWordPair(char* key, strHashTable* table){
     collisionChain* list = table->array[prehash(key,table)];
     if(list == NULL || key == NULL){
@@ -150,43 +119,8 @@ void printTopH(int count, strHashTable* table){
     printTop(count, table->keys);
 }
 
-int main(){
-    /*printf("%ld\n",prehash("a",0 ,45733));
-    printf("-------Expected-------\n1\n0\n0\n1\n-------Actual-------\n");
-    printf("%i\n",compareStr("Hello", "Hello"));
-    printf("%i\n",compareStr("Hello1", "Hello"));
-    char* string1 = (char*)malloc(sizeof(char)*50);
-    char* string2 = (char*)malloc(sizeof(char)*50);
-    char* string3 = (char*)malloc(sizeof(char)*50);
-    char* string4 = (char*)malloc(sizeof(char)*50);
-    char* string5 = (char*)malloc(sizeof(char)*50);
-    char* string6 = (char*)malloc(sizeof(char)*50);
-    strcpy(string1,"Hello");
-    strcpy(string2,"Frank");
-    strcpy(string3,"Hello");
-    strcpy(string4,"Bob");
-    strcpy(string5,"Hello");
-    strcpy(string6,"Frank");
-    wordPair* wp1 = newWordPair(string1, string2);
-    wordPair* wp2 = newWordPair(string3, string4);
-    wordPair* wp3 = newWordPair(string5, string6);
-    printf("%i\n",equalsWordPair(wp1,wp2));
-    printf("%i\n",equalsWordPair(wp1,wp3));
-    destroyWordPair(wp1);
-    destroyWordPair(wp2);
-    destroyWordPair(wp3);
-    collisionChain* newList = newCollisionChainP(wp1);
-    addCollisionChainP(wp2,&newList); 
-    addCollisionChainP(wp3,&newList); 
-    collisionChain* trav = newList;
-    do{
-        printf("%s %s\n",trav->pair->word1,trav->pair->word2);
-    }while((trav = trav->next) != NULL);
+int main(char** argv, int argc){
 
-    destroyCollisionChain(&newList); 
-    if(newList == NULL){
-        printf("Good!\n");
-    }*/
     FILE *in = fopen("mobydick.txt","r");
     strHashTable* table = initHash();
     char *word1 = getNextWord(in);
@@ -206,6 +140,7 @@ int main(){
         free(word1);
     }
     printTopH(10,table);
+    printf("Collisions: %lu, Table Size: %lu\n",table->collisions, table->size); // Uncomment to see collisions and table size.
     destroyHashTable(table);
     fclose(in);
     return 0;

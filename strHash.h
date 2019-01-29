@@ -1,7 +1,7 @@
 #ifndef STR_HASH_H
 #define STR_HASH_H
 
-#define INITIAL_TABLE_SIZE 256
+#define INITIAL_TABLE_SIZE 1000000 // If you decrease this it becomes considerably slower.
 
 #include <stdlib.h>
 

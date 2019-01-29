@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+
 // Create a new word pair.
 wordPair* newWordPair(char* w1, char* w2){ // Expects strings allocated using malloc
     wordPair* new = (wordPair*)malloc(sizeof(wordPair));
