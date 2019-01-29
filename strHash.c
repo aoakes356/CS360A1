@@ -66,6 +66,33 @@ int addHash(wordPair* wp, strHashTable* table){
     return hash;  
 }
 
+int reAddHash(wordPair* wp, strHashTable* table){ 
+    wordPair* temp;
+    unsigned long hash = prehash(wp->words, table);
+    wp->hash = hash;
+    if(table->array[hash] != NULL){ // Collision case
+        table->collisions++;
+        addCollisionChainP(wp,&(table->array[hash]));
+        if(collisionRate(table) > .01){
+            //printf("Resizing\n");  // Uncomment to see each time it resizes.
+            // resize and rehash.
+            int i = table->size;
+            table->size *= 3;
+            table->array = realloc(table->array, sizeof(collisionChain*)*table->size);
+            assert(table->array != NULL);
+            for(;i < table->size; i++){
+                table->array[i] = NULL;
+            }
+            rehash(table);
+        }
+    }else{
+        table->array[hash] = newCollisionChainP(wp);
+        table->used++;
+    }
+
+    return hash;  
+}
+
 void rehash(strHashTable* table){
     unsigned long long oldHash; // used to store rehashed string values.
     wordPair* currentKey;
@@ -76,11 +103,10 @@ void rehash(strHashTable* table){
         oldHash = currentKey->hash;
         if(table->array[oldHash] != NULL){
             assert(removeWordPairCC(&(table->array[oldHash]), currentKey));
-            assert(removeWordPair(currentKey, table->keys));
-            addHash(currentKey,table);
+            reAddHash(currentKey,table);
         }
     }
-   
+
 }
 // Frees ALL memory associated with the hash table.
 void destroyHashTable(strHashTable* table){
@@ -193,7 +219,7 @@ int main(int argc, char** argv){
     }else{
         printTopH(table->keys->used-1, table);
     }
-    //printf("Collisions: %lu, Table Size: %lu\n",table->collisions, table->size); // Uncomment to see collisions and table size.
+    printf("Collisions: %lu, Table Size: %lu\n",table->collisions, table->size); // Uncomment to see collisions and table size.
     destroyHashTable(table);
     return 0;
 }
