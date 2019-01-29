@@ -4,6 +4,7 @@
 #include <string.h>
 #include <assert.h>
 #include "getWord.h"
+#include "crc64.h"
 /* This hash/prehash implementation is based on an MIT open course video 
  * (https://www.youtube.com/watch?v=0M_kIqhwbFo).
  * The probability of collision is 1/m in the worst case, where m is the size of
@@ -16,20 +17,25 @@
  */
 
 
-unsigned long prehash(char* string, unsigned long b, unsigned long tableSize){
+/*unsigned long prehash(char* string, unsigned long b, unsigned long tableSize){
     if(*string == '\0') return b;
     return prehash(string+1,((31*(*string) + b)%(1000000009))%tableSize, tableSize);
 
     
+}*/
+
+unsigned long long prehash(char* string, strHashTable* table){
+    return crc64(string)%table->size;
 }
 
 strHashTable* initHash(){
     strHashTable* new = (strHashTable*)malloc(sizeof(strHashTable));
     new->array = (collisionChain**)malloc(sizeof(collisionChain*)*INITIAL_TABLE_SIZE);
-    assert(new != NULL && new->array != NULL);  // Verify the memory was allocated. exit if not.
     for(int i = 0; i < INITIAL_TABLE_SIZE; i++){
-        new->array[i] = NULL; // Initialize all elements in the array to NULL;
+        new->array[i] = NULL;
     }
+    new->keys = newWordPairList();
+    assert(new != NULL && new->array != NULL && new->keys != NULL);  // Verify the memory was allocated. exit if not.
     new->used = 0;  // Number of elements filled in the array since the last resize.
     new->size = INITIAL_TABLE_SIZE;
     new->collisions = 0;    // The number of collisions that have occured since the last resize.
@@ -44,113 +50,61 @@ int addHashW(char* w1, char* w2, strHashTable* table){
 // Add a new word pair to the hash table.
 // If the word collides, the hash may resize in order to maintain a certain ratio of collisions to insertions.
 int addHash(wordPair* wp, strHashTable* table){ 
-    unsigned long hash = prehash(wp->word2,prehash(wp->word1,0,table->size),table->size);
-    //printf("%lu\n",hash);
+    wordPair* temp;
+    unsigned long hash = prehash(wp->words, table);
     wp->hash = hash;
-    if(table->array[hash] == NULL){
-        table->used++;
-        table->array[hash] = newCollisionChainP(wp);
-        return 0;
-    }else{
-        // Check if the same pair exists in the linked list already.
-        collisionChain* current = table->array[hash], *prev = NULL;
-        collisionChain* new;
-        do{
-            if(equalsWordPair(wp,current->pair)){   // Compare each word pair
-                wp->freq = current->pair->freq+1;   // Swap the old chain with the new one
-                new = newCollisionChainP(wp);
-                new->next = current->next;
-                if(prev != NULL){
-                    prev->next = new;
-                }else{
-                    table->array[hash] = new;
+    if((temp = getWordPair(wp->words, table)) != NULL){
+        temp->freq++;
+        destroyWordPair(&wp);   // Duplicate, can free;
+    }else{ 
+        if(table->array[hash] != NULL){ // Collision case
+            table->collisions++;
+            addCollisionChainP(wp,&(table->array[hash]));
+            if(table->collisions > table->size){
+                // resize and rehash.
+                int i = table->size;
+                table->size *= 3;
+                table->array = realloc(table->array, sizeof(collisionChain*)*table->size);
+                assert(table->array != NULL);
+                for(;i < table->size; i++){
+                    table->array[i] = NULL;
                 }
-                current->next = NULL;
-                destroyCollisionChain(&current);    // Free the old chain
-                // This is done in order to ensure that duplicate word pairs are freed properly.
-                return 1;
+                rehash(table);
             }
-            prev = current;
-        }while((current = current->next) != NULL);
-        // Since it's not a duplicate, it's a new collision
-        table->collisions++;
-        addCollisionChainP(wp,&table->array[hash]);
-        
-        if(collisionRate(table) > .01){
-            // Resize
-            printf("Resizing\n");
-            //printf("Resizing the hash table.\n");
-            size_t temp = table->size;
-            table->size *= 3;
-            table->array = (collisionChain**)realloc(table->array,sizeof(collisionChain*)*table->size);
-            for(int i = temp-1; i < table->size; i++){
-                table->array[i] = NULL; // Set the new pointers to NULL.
-            }
-            // Rehash
-            rehash(table);
-            table->used = 0;
-            table->collisions = 0;
+        }else{
+            table->array[hash] = newCollisionChainP(wp);
+            table->used++;
         }
-        return 0;
+        pushWordPair(wp, table->keys);
     }
+    return hash;  
 }
 
 void rehash(strHashTable* table){
-    unsigned long temp;
-    collisionChain* current, *prev;
-    for(int i = 0; i < table->size; i++){
-        current = table->array[i];
-        prev = NULL;
-        //printf("rehash iteration: %i\n",i);
-        if(current == NULL) continue;               // Loop until non empty linked list is found.
-  //      printCollisionChain(current);
-        do{
-            // The new hash value.
-            temp = prehash(current->pair->word2,prehash(current->pair->word1,0,table->size),table->size);
-            if(temp != current->pair->hash){        // check if the hash changed after resize.
-                if(prev == NULL){                   // This means it is the first element.
-                    //printf("Front ");
-                    table->array[i] = current->next;
-                    if(table->array[temp] == NULL){ // The new spot for the current word pair is blank if true.
-                       // printf("New ");
-                        current->next = NULL;
-                        table->array[temp] = current;
-                    }else{                          // Add it to the existing linked list
-                   //     printf("Old ");
-                        //printf("%s %s should equal ",current->next->pair->word1,current->next->pair->word2);
-                        current->next = NULL;
-                        addCollisionChainQ(current, &(table->array[temp]));
-                     //   printf("%s %s ",table->array[temp]->next->pair->word1,table->array[temp]->next->pair->word2 );
-                    }
-                }else{
-                 //   printf("Middle ");
-                    prev->next = current->next;
-                    if(table->array[temp] == NULL){ // The new spot for the current word pair is blank if true.
-               //         printf("New ");
-                        current->next = NULL;
-                        table->array[temp] = current;
-                    }else{                          // Add it to the existing linked list
-             //           printf("Old ");
-                        current->next = NULL;
-                        addCollisionChainQ(current, &(table->array[temp]));
-                    }
-                    prev = current;
-                }
-           //     printf("\n");
-            }else{
-                prev = current;
-            }
-            current->pair->hash = temp;
-        }while((current = current->next) != NULL);
+    unsigned long long oldHash; // used to store rehashed string values.
+    wordPair* currentKey;
+    table->collisions = 0;
+    table->used = 0;
+    for(int i = 0; i < table->keys->used; i++){
+        currentKey = table->keys->array[i];
+        oldHash = currentKey->hash;
+        if(table->array[oldHash] != NULL){
+            assert(removeWordPairCC(&(table->array[oldHash]), currentKey));
+            assert(removeWordPair(currentKey, table->keys));
+            addHash(currentKey,table);
+        }
     }
+   
 }
 // Frees ALL memory associated with the hash table.
 void destroyHashTable(strHashTable* table){
     collisionChain* current;
+    /* needs to be refactored to use the keys in the wordpairlist */
     for(int i = 0; i < table->size; i++){
         if((current = table->array[i]) == NULL) continue;
         destroyCollisionChain(&current);
     }
+    destroyWordPairList(&(table->keys));
     free(table->array);
     free(table);
 }
@@ -176,6 +130,24 @@ wordPair* getMax(strHashTable* table){
         }while((current = current->next) != NULL);
     }
     return max;
+}
+
+wordPair* getWordPair(char* key, strHashTable* table){
+    collisionChain* list = table->array[prehash(key,table)];
+    if(list == NULL || key == NULL){
+        return NULL; // key not found.
+    }else{
+        collisionChain* current = list;
+        do{
+            if(compareStr(current->pair->words, key)) return current->pair;
+        }while((current = current->next) != NULL);
+        return NULL;
+    }
+}
+
+void printTopH(int count, strHashTable* table){
+    sortWordPairList(table->keys);
+    printTop(count, table->keys);
 }
 
 int main(){
@@ -217,20 +189,23 @@ int main(){
     }*/
     FILE *in = fopen("mobydick.txt","r");
     strHashTable* table = initHash();
-    char *word1 = getNextWord(in), *word2 = getNextWord(in);
+    char *word1 = getNextWord(in);
+    char *word2 = getNextWord(in);
     if(word1 == NULL || word2 == NULL){
         return 0;
     }
     addHashW(word1, word2, table);
-    while((word1 = strdup(word2)) != NULL && (word2 = getNextWord(in)) != NULL){
+    free(word1);
+    word1 = NULL;
+    while((word1 = word2) != NULL && (word2 = getNextWord(in)) != NULL){
         //printf("%s %s\n",word1, word2);
         addHashW(word1, word2, table);
+        free(word1);
     }
     if(word2 == NULL){
         free(word1);
     }
-    wordPair* max = getMax(table);
-    printf("Max: Words(%s, %s) count : %i\n collisions in Table: %i, Table Size: %lu\n", max->word1, max->word2, max->freq,table->collisions, table->size);
+    printTopH(10,table);
     destroyHashTable(table);
     fclose(in);
     return 0;
