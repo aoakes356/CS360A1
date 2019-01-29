@@ -61,6 +61,7 @@ int addHash(wordPair* wp, strHashTable* table){
             table->used++;
         }
         pushWordPair(wp, table->keys);
+
     }
     return hash;  
 }
@@ -94,6 +95,7 @@ void destroyHashTable(strHashTable* table){
     free(table);
 }
 
+// Returns the ratio of collisions to the total size of the table.
 double collisionRate(strHashTable* table){
     // Returns collisions/insertions
     if(table->used > 0) return ((double)table->collisions)/((double)table->size);
@@ -131,19 +133,19 @@ int main(int argc, char** argv){
     if(compareStr(argv[1],"-count")){
         if(argc < 4){
             printf("Specify at least one file path\n");
-            return 0;
+            return 1;
         }
         (sscanf(argv[2],"=%d",&count) || sscanf(argv[2],"%d",&count));
         fileCount -= 2;
-    }else if(sscanf(argv[1],"%d",&count) || sscanf(argv[1],"-count=%d",&count)){
+    }else if(sscanf(argv[1],"-%d",&count) || sscanf(argv[1],"-count=%d",&count) || sscanf(argv[1],"%d",&count) ){
         if(argc < 3){
             printf("Specify at least one file path\n");
-            return 0;
+            return 1;
         }
         fileCount--;
     }
 
-    start = argc-fileCount;
+    start = argc - fileCount;
 
     strHashTable* table = initHash();
     FILE *in;
@@ -156,6 +158,12 @@ int main(int argc, char** argv){
         }
         word2 = getNextWord(in);
         if(word1 == NULL || word2 == NULL){
+            /*if(word2 != NULL){
+                printf("word2: %s\n",word2);
+            }else if(word1 != NULL){
+                printf("word1: %s\n",word1);
+            }*/
+            fclose(in);
             continue;
         }
         addHashW(word1, word2, table);
@@ -170,6 +178,15 @@ int main(int argc, char** argv){
             free(word1);
             word1 = NULL;
         }
+        fclose(in);
+    }
+    if(word1 != NULL){
+        free(word1);
+        word1 = NULL;
+    }
+    if(word2 != NULL){
+        free(word2);
+        word2 = NULL;
     }
     if(count > 0){
         printTopH(count,table);
@@ -178,7 +195,6 @@ int main(int argc, char** argv){
     }
     //printf("Collisions: %lu, Table Size: %lu\n",table->collisions, table->size); // Uncomment to see collisions and table size.
     destroyHashTable(table);
-    fclose(in);
     return 0;
 }
 
