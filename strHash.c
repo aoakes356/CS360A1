@@ -119,28 +119,64 @@ void printTopH(int count, strHashTable* table){
     printTop(count, table->keys);
 }
 
-int main(char** argv, int argc){
-
-    FILE *in = fopen("mobydick.txt","r");
-    strHashTable* table = initHash();
-    char *word1 = getNextWord(in);
-    char *word2 = getNextWord(in);
-    if(word1 == NULL || word2 == NULL){
+int main(int argc, char** argv){
+    // Check if it has a useable number of arguments.
+    if(argc < 2){
+        printf("Incorrect Usage\n wordpairs <-count> fileName1 <fileName2> <fileName3> ...\n");
         return 0;
     }
-    addHashW(word1, word2, table);
-    free(word1);
-    word1 = NULL;
-    while((word1 = word2) != NULL && (word2 = getNextWord(in)) != NULL){
-        //printf("%s %s\n",word1, word2);
+
+    int count = 0, fileCount = argc-1, start = argc;
+
+    if(compareStr(argv[1],"-count")){
+        if(argc < 4){
+            printf("Specify at least one file path\n");
+            return 0;
+        }
+        (sscanf(argv[2],"=%d",&count) || sscanf(argv[2],"%d",&count));
+        fileCount -= 2;
+    }else if(sscanf(argv[1],"%d",&count) || sscanf(argv[1],"-count=%d",&count)){
+        if(argc < 3){
+            printf("Specify at least one file path\n");
+            return 0;
+        }
+        fileCount--;
+    }
+
+    start = argc-fileCount;
+
+    strHashTable* table = initHash();
+    FILE *in;
+    char* word1 = NULL, *word2 = NULL;
+    for(int i = 0; i < fileCount; i++){
+        in = fopen(argv[start+i],"r");
+        assert(in != NULL);
+        if(word1 == NULL){
+            word1 = getNextWord(in);
+        }
+        word2 = getNextWord(in);
+        if(word1 == NULL || word2 == NULL){
+            continue;
+        }
         addHashW(word1, word2, table);
         free(word1);
+        word1 = NULL;
+        while((word1 = word2) != NULL && (word2 = getNextWord(in)) != NULL){
+            addHashW(word1, word2, table);
+            free(word1);
+            word1 = NULL;
+        }
+        if(word2 == NULL && i == fileCount -1){
+            free(word1);
+            word1 = NULL;
+        }
     }
-    if(word2 == NULL){
-        free(word1);
+    if(count > 0){
+        printTopH(count,table);
+    }else{
+        printTopH(table->keys->used-1, table);
     }
-    printTopH(10,table);
-    printf("Collisions: %lu, Table Size: %lu\n",table->collisions, table->size); // Uncomment to see collisions and table size.
+    //printf("Collisions: %lu, Table Size: %lu\n",table->collisions, table->size); // Uncomment to see collisions and table size.
     destroyHashTable(table);
     fclose(in);
     return 0;
