@@ -6,7 +6,7 @@
 #include "getWord.h"
 #include "crc64.h"
 
-// Just using the given hash function modulo table size.
+// Just using the given hash function modulo the table size to give me values in the correct range.
 unsigned long long prehash(char* string, strHashTable* table){
     return crc64(string)%table->size;
 }
@@ -16,17 +16,17 @@ strHashTable* initHash(){
     strHashTable* new = (strHashTable*)malloc(sizeof(strHashTable));
     new->array = (collisionChain**)malloc(sizeof(collisionChain*)*INITIAL_TABLE_SIZE);
     for(int i = 0; i < INITIAL_TABLE_SIZE; i++){
-        new->array[i] = NULL;                   // Initialize table values to NULL.
+        new->array[i] = NULL;                                       // Initialize table values to NULL.
     }
-    new->keys = newWordPairList();  // use an expandable list of wordPairs to store all the keys for the table.
-    assert(new != NULL && new->array != NULL && new->keys != NULL);  // Verify the memory was allocated. exit if not.
-    new->used = 0;  // Number of elements filled in the array since the last resize.
+    new->keys = newWordPairList();                                  // use an expandable list of wordPairs to store all the keys for the table.
+    assert(new != NULL && new->array != NULL && new->keys != NULL); // Verify the memory was allocated. exit if not.
+    new->used = 0;                                                  // Number of elements filled in the array since the last resize.
     new->size = INITIAL_TABLE_SIZE;
-    new->collisions = 0;    // The number of collisions that have occured since the last resize.
+    new->collisions = 0;                                            // The number of collisions that have occured since the last resize.
     return new;
 }
 
-// Adds a new wordpair to the hash table, returns 0 if there is a collision, else returns 1.
+// Adds a new wordpair to the hash table, returns the hash value of the string contained in wp.
 
 int addHashW(char* w1, char* w2, strHashTable* table){
     return addHash(newWordPair(w1, w2), table);
@@ -65,15 +65,16 @@ int addHash(wordPair* wp, strHashTable* table){
     }
     return hash;  
 }
-
+// This is a version of the above addHash function, but optomized for rehashing of an existing key.
+// Not meant for use outside of the rehash function.
 int reAddHash(wordPair* wp, strHashTable* table){ 
     wordPair* temp;
-    unsigned long hash = prehash(wp->words, table);
+    unsigned long hash = prehash(wp->words, table); // Get the new hash value.
     wp->hash = hash;
     if(table->array[hash] != NULL){ // Collision case
         table->collisions++;
         addCollisionChainP(wp,&(table->array[hash]));
-        if(collisionRate(table) > .01){
+        if(collisionRate(table) > .001){
             //printf("Resizing\n");  // Uncomment to see each time it resizes.
             // resize and rehash.
             int i = table->size;
@@ -111,7 +112,6 @@ void rehash(strHashTable* table){
 // Frees ALL memory associated with the hash table.
 void destroyHashTable(strHashTable* table){
     collisionChain* current;
-    /* needs to be refactored to use the keys in the wordpairlist */
     for(int i = 0; i < table->size; i++){
         if((current = table->array[i]) == NULL) continue;
         destroyCollisionChain(&current);

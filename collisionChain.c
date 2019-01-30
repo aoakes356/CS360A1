@@ -8,8 +8,8 @@ collisionChain* newCollisionChainW(char* w1, char* w2){
 }
 
 collisionChain* newCollisionChainP(wordPair* wp){
-    collisionChain* newChain = (collisionChain*)malloc(sizeof(collisionChain));
-    assert(newChain != NULL);
+    collisionChain* newChain = (collisionChain*)malloc(sizeof(collisionChain)); // Allocate memory for the structure.
+    assert(newChain != NULL);                                                   // Check that it was actually allocated.
     newChain->pair = wp;
     newChain->next = NULL;
     return newChain;
@@ -19,7 +19,7 @@ collisionChain* newCollisionChainP(wordPair* wp){
 /* Frees ALL memory associated with the collision chain, sets the pointer to null. */
 void destroyCollisionChain(collisionChain** head){
     if(*head == NULL) return;
-    destroyCollisionChain(&((*head)->next));
+    destroyCollisionChain(&((*head)->next));            // Recursive deletion.
     destroyWordPair(&((*head)->pair));
     free(*head);
     *head = NULL;
@@ -33,17 +33,17 @@ void destroyCollisionChainWP(collisionChain** head){ // Destroy the collisioncha
 }
 
 /* add to the front of a collision Chain */
-void addCollisionChainW(char* w1, char* w2, collisionChain** head){
+void addCollisionChainW(char* w1, char* w2, collisionChain** head){ // Create a new collision chain using two words.
     collisionChain* newHead = newCollisionChainW(w1,w2);
-    addCollisionChainQ(newHead,head);
+    addCollisionChainQ(newHead,head);                               
 }
 
-void addCollisionChainP(wordPair* wp, collisionChain** head){
+void addCollisionChainP(wordPair* wp, collisionChain** head){       // Create a new collision chain using a premade word pair
     collisionChain* newHead = newCollisionChainP(wp);
     addCollisionChainQ(newHead, head);
 }
 
-void addCollisionChainQ(collisionChain* new, collisionChain** head){
+void addCollisionChainQ(collisionChain* new, collisionChain** head){// Create a new collision chain using a premade node.
     new->next = *head;
     *head = new;
 }
@@ -54,7 +54,7 @@ int removeWordPairCC(collisionChain** head, wordPair* deleteThis){
     if(*head == NULL){
         return 0;
     }
-    do{
+    do{                                                             // Loop through the linked list until a matching wp is found
         if(deleteThis == current->pair){
             if(previous == NULL){
                 *head = (*head)->next;
@@ -62,9 +62,9 @@ int removeWordPairCC(collisionChain** head, wordPair* deleteThis){
                 destroyCollisionChainWP(&current);
                 return 1;
             }
-            previous->next = current->next;
+            previous->next = current->next;                         // Skip over the current node.
             current->next = NULL;
-            destroyCollisionChainWP(&current);
+            destroyCollisionChainWP(&current);                      // Free the memory associated with the collision chain without deleting the wp.
             return 1;
         }
         previous = current;
@@ -72,7 +72,7 @@ int removeWordPairCC(collisionChain** head, wordPair* deleteThis){
     return 0;
 }
 
-void printCollisionChain(collisionChain* head){
+void printCollisionChain(collisionChain* head){                     // For debugging purposes, print the whole chain.
     if(head == NULL){
         printf("NULL \n");
         return;
