@@ -155,15 +155,8 @@ int main(int argc, char** argv){
     }
 
     int count = 0, fileCount = argc-1, start = argc;
-
-    if(compareStr(argv[1],"-count")){
-        if(argc < 4){
-            printf("Specify at least one file path\n");
-            return 1;
-        }
-        (sscanf(argv[2],"=%d",&count) || sscanf(argv[2],"%d",&count));
-        fileCount -= 2;
-    }else if(sscanf(argv[1],"-%d",&count) || sscanf(argv[1],"-count=%d",&count) || sscanf(argv[1],"%d",&count) ){
+    // Check if the number of elements to be printed is an argument.
+    if(sscanf(argv[1],"-%d",&count) || sscanf(argv[1],"-count=%d",&count) || sscanf(argv[1],"%d",&count) ){
         if(argc < 3){
             printf("Specify at least one file path\n");
             return 1;
@@ -184,11 +177,6 @@ int main(int argc, char** argv){
         }
         word2 = getNextWord(in);
         if(word1 == NULL || word2 == NULL){
-            /*if(word2 != NULL){
-                printf("word2: %s\n",word2);
-            }else if(word1 != NULL){
-                printf("word1: %s\n",word1);
-            }*/
             fclose(in);
             continue;
         }
@@ -206,6 +194,9 @@ int main(int argc, char** argv){
         }
         fclose(in);
     }
+
+    // Shouldn't need both of these but i'm paranoid.
+    
     if(word1 != NULL){
         free(word1);
         word1 = NULL;
@@ -214,12 +205,14 @@ int main(int argc, char** argv){
         free(word2);
         word2 = NULL;
     }
-    if(count > 0){
+
+    if(count > 0){                              // Check if the amount to be printed has been specified.
         printTopH(count,table);
     }else{
-        printTopH(table->keys->used-1, table);
+        printTopH(table->keys->used-1, table);  // If not print them all.
     }
-    printf("Collisions: %lu, Table Size: %lu\n",table->collisions, table->size); // Uncomment to see collisions and table size.
+
+    //printf("Collisions: %lu, Table Size: %lu\n",table->collisions, table->size); // Uncomment to see collisions and table size.
     destroyHashTable(table);
     return 0;
 }
