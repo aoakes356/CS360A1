@@ -1,8 +1,8 @@
 EXE = wordpairs
 CC = gcc
 OBJDIR = obj
-SRC = $(wildcard *.c)
-HDR = $(wildcard *.h)
+SRC = $(wildcard *.c) 
+HDR = $(wildcard *.h) 
 OBJ = $(patsubst %.c, $(OBJDIR)/%.o, $(SRC))
 LIBS = -lm -Wall
 

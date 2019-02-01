@@ -132,7 +132,7 @@ void destroyHashTable(strHashTable* table){
 // Returns the ratio of collisions to the total size of the table.
 double collisionRate(strHashTable* table){
     // Returns collisions/insertions
-    if(table->used > 0) return ((double)table->collisions)/((double)table->size);
+    if(table->used > 0) return ((double)table->collisions)/((double)(table->size));
     return 0.0;
     
 }
@@ -191,6 +191,7 @@ int main(int argc, char** argv){
         addHashW(word1, word2, table);
         free(word1);
         word1 = NULL;
+        // Loop through aiding each pair to the hash table.
         while((word1 = word2) != NULL && (word2 = getNextWord(in)) != NULL){
             addHashW(word1, word2, table);
             free(word1);
