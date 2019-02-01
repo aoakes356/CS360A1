@@ -1,7 +1,7 @@
 #ifndef STR_HASH_H
 #define STR_HASH_H
 
-#define INITIAL_TABLE_SIZE 47 
+#define INITIAL_TABLE_SIZE 49   // 47 is particularly fast for some reason. 
 #define STR_SIZE 16 // Determines the initial size of all word pairs. 
 
 #include <stdlib.h>
