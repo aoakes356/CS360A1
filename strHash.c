@@ -52,7 +52,7 @@ int addHash(wordPair* wp, strHashTable* table){
         if(table->array[hash] != NULL){ // Collision case
             table->collisions++;
             addCollisionChainP(wp,&(table->array[hash]));
-            if(collisionRate(table) > .01){
+            if(collisionRate(table) > REHASH_POINT){
                 //printf("Resizing\n");  // Uncomment to see each time it resizes.
                 // resize and rehash.
                 int i = table->size;
@@ -82,7 +82,7 @@ int reAddHash(wordPair* wp, strHashTable* table){
     if(table->array[hash] != NULL){ // Collision case
         table->collisions++;
         addCollisionChainP(wp,&(table->array[hash]));
-        if(collisionRate(table) > .001){
+        if(collisionRate(table) > REHASH_POINT){
             //printf("Resizing\n");  // Uncomment to see each time it resizes.
             // resize and rehash.
             int i = table->size;
