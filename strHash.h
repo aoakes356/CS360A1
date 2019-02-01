@@ -1,7 +1,8 @@
 #ifndef STR_HASH_H
 #define STR_HASH_H
 
-#define INITIAL_TABLE_SIZE 100 // If you decrease this it becomes considerably slower.
+#define INITIAL_TABLE_SIZE 47 
+#define STR_SIZE 16 // Determines the initial size of all word pairs. 
 
 #include <stdlib.h>
 
@@ -64,7 +65,7 @@ wordPair* getWordPair(char*, strHashTable*);
 
 // concatenate two strings together, resizing the destination string as needed.
 // The given destination string is expected to be allocated using malloc().
-int concat(char* dest, char* src, int destSize);
+int concat(char** dest, char* src, int destSize);
 
 // allocate a new wordpair structure.
 wordPair* newWordPair(char*, char*); // Expects strings allocated using malloc

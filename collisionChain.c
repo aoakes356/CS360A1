@@ -52,6 +52,7 @@ void addCollisionChainQ(collisionChain* new, collisionChain** head){// Create a 
 int removeWordPairCC(collisionChain** head, wordPair* deleteThis){
     collisionChain* current = *head, *previous = NULL;
     if(*head == NULL){
+        printf("Failed head is null\n");
         return 0;
     }
     do{                                                             // Loop through the linked list until a matching wp is found
@@ -69,6 +70,7 @@ int removeWordPairCC(collisionChain** head, wordPair* deleteThis){
         }
         previous = current;
     }while((current = current->next) != NULL);
+    printf("Failed no match found\n");
     return 0;
 }
 

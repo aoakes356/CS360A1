@@ -5,10 +5,18 @@
 #include <assert.h>
 #include "getWord.h"
 #include "crc64.h"
+#include <stdint.h>
 
-// Just using the given hash function modulo the table size to give me values in the correct range.
+// The hashing algorithm (dj2b), first found by dan bernstein. Pretty fast, and there is not a restriction on string size.
 unsigned long long prehash(char* string, strHashTable* table){
-    return crc64(string)%table->size;
+    unsigned long hash = 5381;
+    int c;
+
+    while (c = *string++)
+        hash = ((hash << 5) + hash) + c; 
+
+    return hash%table->size; 
+    
 }
 
 // Initialize a new hash table, returns a pointer to said hash table.
@@ -212,7 +220,7 @@ int main(int argc, char** argv){
         printTopH(table->keys->used-1, table);  // If not print them all.
     }
 
-    //printf("Collisions: %lu, Table Size: %lu\n",table->collisions, table->size); // Uncomment to see collisions and table size.
+    printf("Collisions: %lu, Table Size: %lu\n",table->collisions, table->size); // Uncomment to see collisions and table size.
     destroyHashTable(table);
     return 0;
 }

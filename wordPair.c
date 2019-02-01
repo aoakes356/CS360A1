@@ -3,24 +3,24 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-
 // Create a new word pair.
 wordPair* newWordPair(char* w1, char* w2){ // Expects strings allocated using malloc
     wordPair* new = (wordPair*)malloc(sizeof(wordPair));
     assert(new != NULL);
-    new->words = (char*)calloc(sizeof(char),64);
+    new->words = (char*)calloc(sizeof(char),STR_SIZE);
     assert(new->words != NULL);
-    strncpy(new->words,"",64);  // Did this because it would cause a segfault for some reason when I just put in the null terminator.
+    strncpy(new->words,"",STR_SIZE);  // Did this because it would cause a segfault for some reason when I just put in the null terminator.
     
     // Make the two words into one word with a space inbetween to simplify hashing.
     // also more memory efficient since it only needs a single pointer per word pair.
-    concat(new->words, w2, concat(new->words," ",concat(new->words,w1,64)));
+    concat(&(new->words), w2, concat(&(new->words)," ",concat(&(new->words),w1,STR_SIZE)));
     new->freq = 1;      // Initial count is one of course;
     return new;
 }
 
 // Free memory used by a word pair.
 void destroyWordPair(wordPair** w){
+    if(w == NULL) return;
     free((*w)->words);
     free(*w);
     *w = NULL;
@@ -45,19 +45,19 @@ int compareStr(char* str1, char* str2){ // Assumes null terminated string.
 }
 
 // Concatenation which resizes the string as needed.
-int concat(char* dest, char* src, int destSize){
+int concat(char** dest, char* src, int destSize){
     int i,j;
-    assert(dest != NULL && src != NULL);
-    for(i = 0; dest[i] != '\0'; i++);                           // Get the string length of dest.
+    assert(*dest != NULL && src != NULL);
+    for(i = 0; (*dest)[i] != '\0'; i++);                           // Get the string length of dest.
     for(j = 0; src[j] != '\0'; j++){
-        if(j >= destSize){                                      // Need to resize the destination string.
-            destSize += 20;
-            dest = (char* )realloc(dest,destSize*sizeof(char));
-            assert(dest != NULL);
+        if(j+i >= destSize-1){                                      // Need to resize the destination string.
+            destSize *= 2;
+            *dest = (char* )realloc(*dest,destSize*sizeof(char));
+            assert(*dest != NULL);
         }
-        dest[j+i] = src[j];
+        (*dest)[j+i] = src[j];
     }
-    dest[j+i] = '\0';                                           // Terminate the new string.
+    (*dest)[j+i] = '\0';                                           // Terminate the new string.
     return destSize;
 }
 
