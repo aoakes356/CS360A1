@@ -15,7 +15,7 @@ To build with debug information type "make debug" into the terminal while in the
 To remove all object files type "make clean".
 
 NOTE: to change the files which are used for the getWord code, change the variable called GET_WORD in the make file, 
-and change the #define in the strHash.c file to refer to the correct header file. The way the makefile is setup, it will
+and change the #define in the main.c file to refer to the correct header file. The way the makefile is setup, it will
 attempt to build using ALL .c and .h files in whatever directory is given. 
 
 USAGE INSTRUCTIONS -------------------------------------------------------

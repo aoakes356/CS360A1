@@ -45,6 +45,9 @@ unsigned long long prehash(char*, strHashTable*);
 // Initialize a new hash table
 strHashTable* initHash();
 
+//Add a new wordpair to the hash tabel by passing two words.
+int addHashW(char*, char*, strHashTable*);
+
 // Add a new wordpair to the hash table.
 int addHash(wordPair*, strHashTable*);
 
