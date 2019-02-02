@@ -3,9 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "./hw1/getWord/include/getWord.h" 
-#include "crc64.h"
-#include <stdint.h>
+
 
 // The hashing algorithm (dj2b), first found by Daniel J. Bernstein (https://en.wikipedia.org/wiki/Daniel_J._Bernstein)
 // Pretty fast, and there is not a restriction on string size.
