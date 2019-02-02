@@ -1,16 +1,17 @@
 #ifndef STR_HASH_H
 #define STR_HASH_H
 
-#define INITIAL_TABLE_SIZE 47   // 47 is particularly fast for some reason. 
+
+#define INITIAL_TABLE_SIZE 1   // 47 is particularly fast for some reason. 
 #define STR_SIZE 16 // Determines the initial size of all word pairs. 
 #define REHASH_POINT .1 // this seems to be the best rate despite resulting in more collisions, rehashing is still more expensive.
 
-#include <stdlib.h>
+#include <stdlib.h> // For typedef
 
 // Word pair structure for counting occurrences of word pairs.
 typedef struct wordPair{
     char* words;
-    unsigned long freq;    
+    int freq;    
     unsigned long hash;
 } wordPair;
 

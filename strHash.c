@@ -3,16 +3,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "getWord.h"
+#include "./hw1/getWord/include/getWord.h" 
 #include "crc64.h"
 #include <stdint.h>
 
-// The hashing algorithm (dj2b), first found by dan bernstein. Pretty fast, and there is not a restriction on string size.
+// The hashing algorithm (dj2b), first found by Daniel J. Bernstein (https://en.wikipedia.org/wiki/Daniel_J._Bernstein)
+// Pretty fast, and there is not a restriction on string size.
 unsigned long long prehash(char* string, strHashTable* table){
     unsigned long hash = 5381;
     int c;
 
-    while (c = *string++)
+    while ((c = *string++))
         hash = ((hash << 5) + hash) + c; 
 
     return hash%table->size; 
@@ -76,7 +77,6 @@ int addHash(wordPair* wp, strHashTable* table){
 // This is a version of the above addHash function, but optomized for rehashing of an existing key.
 // Not meant for use outside of the rehash function.
 int reAddHash(wordPair* wp, strHashTable* table){ 
-    wordPair* temp;
     unsigned long hash = prehash(wp->words, table); // Get the new hash value.
     wp->hash = hash;
     if(table->array[hash] != NULL){ // Collision case
@@ -131,18 +131,25 @@ void destroyHashTable(strHashTable* table){
 
 // Returns the ratio of collisions to the total size of the table.
 double collisionRate(strHashTable* table){
-    // Returns collisions/insertions
+    /* Returns collisions/insertions
+       As the table size increases, the less desirable a rehash becomes.
+       So, it makes sense to have more strict requirements while the table size is small to reduce
+       the number of strings that must be rehashed (That is if speed is a priority).
+    */
     if(table->used > 0) return ((double)table->collisions)/((double)(table->size));
     return 0.0;
     
 }
 
+// This is probably the fastest way to access a particular wordpair
+// So long as the hash function is fast.
 wordPair* getWordPair(char* key, strHashTable* table){
     collisionChain* list = table->array[prehash(key,table)];
     if(list == NULL || key == NULL){
         return NULL; // key not found.
     }else{
         collisionChain* current = list;
+        // Still have to loop through the collision chains and compare the strings (ew).
         do{
             if(compareStr(current->pair->words, key)) return current->pair;
         }while((current = current->next) != NULL);
@@ -221,7 +228,7 @@ int main(int argc, char** argv){
         printTopH(table->keys->used-1, table);  // If not print them all.
     }
 
-    printf("Collisions: %lu, Table Size: %lu\n",table->collisions, table->size); // Uncomment to see collisions and table size.
+    //printf("Collisions: %i, Table Size: %lu\n",table->collisions, table->size); // Uncomment to see collisions and table size.
     destroyHashTable(table);
     return 0;
 }
