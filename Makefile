@@ -25,6 +25,6 @@ debug: $(SRC) $(HDR)
 	$(CC) $(SRC) -g -o $(EXE) $(LIBS)
 
 fast: $(SRC) $(HDR)
-	$(CC) $(SRC) -g -o $(EXE) $(LIBS) -O3
+	$(CC) $(SRC) -o $(EXE) $(LIBS) -O3
  
 
