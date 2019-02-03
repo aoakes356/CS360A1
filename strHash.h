@@ -5,7 +5,7 @@
 #define INITIAL_TABLE_SIZE 1   // 47 is particularly fast for some reason. 
 #define STR_SIZE 16 // Determines the initial size of all word pairs. 
 #define REHASH_POINT .1 // this seems to be the best rate despite resulting in more collisions, rehashing is still more expensive.
-
+#define MULTIPLIER 6
 #include <stdlib.h> // For typedef
 
 // Word pair structure for counting occurrences of word pairs.
@@ -13,6 +13,7 @@ typedef struct wordPair{
     char* words;
     int freq;    
     unsigned long hash;
+    unsigned long prehash;
 } wordPair;
 
 // An expandable array which stores word pairs.
@@ -40,7 +41,7 @@ typedef struct strHashTable{
 /* Hash table code */
 
 // Gets the value of the index of a given string for the hashtable
-unsigned long long prehash(char*, strHashTable*);
+unsigned long prehash(char*, strHashTable*);
 
 // Initialize a new hash table
 strHashTable* initHash();
@@ -55,7 +56,7 @@ int addHash(wordPair*, strHashTable*);
 double collisionRate(strHashTable* );
 
 // Re-calculate the hash values for each word pair already in the hash table.
-void rehash(strHashTable* );
+void rehash(strHashTable*);
 
 // Free all memory associated with a hash table.
 void destroyHashTable(strHashTable*);

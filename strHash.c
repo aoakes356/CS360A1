@@ -7,14 +7,14 @@
 
 // The hashing algorithm (dj2b), first found by Daniel J. Bernstein (https://en.wikipedia.org/wiki/Daniel_J._Bernstein)
 // Pretty fast, and there is not a restriction on string size.
-unsigned long long prehash(char* string, strHashTable* table){
+unsigned long prehash(char* string, strHashTable* table){
     unsigned long hash = 5381;
     int c;
 
     while ((c = *string++))
         hash = ((hash << 5) + hash) + c; 
 
-    return hash%table->size; 
+    return hash; 
 
 }
 
@@ -38,13 +38,30 @@ strHashTable* initHash(){
 int addHashW(char* w1, char* w2, strHashTable* table){
     return addHash(newWordPair(w1, w2), table);
 }
+
+wordPair* getWordPairP(wordPair* key, strHashTable* table){
+    collisionChain* list = table->array[key->hash];
+    if(list == NULL || key == NULL){
+        return NULL; // key not found.
+    }else{
+        collisionChain* current = list;
+        // Still have to loop through the collision chains and compare the strings (ew).
+        do{
+            if(compareStr(current->pair->words, key->words)) return current->pair;
+        }while((current = current->next) != NULL);
+        return NULL;
+    }
+}
+
 // Add a new word pair to the hash table.
 // If the word collides, the hash may resize in order to maintain a certain ratio of collisions to insertions.
 int addHash(wordPair* wp, strHashTable* table){ 
     wordPair* temp;
-    unsigned long hash = prehash(wp->words, table);
-    wp->hash = hash;
-    if((temp = getWordPair(wp->words, table)) != NULL){
+    unsigned long prhash = prehash(wp->words, table);
+    wp->prehash = prhash;
+    wp->hash = prhash%table->size;
+    unsigned long hash = wp->hash;
+    if((temp = getWordPairP(wp, table)) != NULL){
         temp->freq++;
         destroyWordPair(&wp);   // Duplicate, can free;
     }else{ 
@@ -55,7 +72,7 @@ int addHash(wordPair* wp, strHashTable* table){
                 //printf("Resizing\n");  // Uncomment to see each time it resizes (excluding resizing done during rehash).
                 // resize and rehash.
                 int i = table->size;
-                table->size *= 3;
+                table->size *= MULTIPLIER;
                 table->array = realloc(table->array, sizeof(collisionChain*)*table->size);
                 assert(table->array != NULL);
                 for(;i < table->size; i++){
@@ -75,8 +92,8 @@ int addHash(wordPair* wp, strHashTable* table){
 // This is a version of the above addHash function, but optomized for rehashing of an existing key.
 // Not meant for use outside of the rehash function.
 int reAddHash(wordPair* wp, strHashTable* table){ 
-    unsigned long hash = prehash(wp->words, table); // Get the new hash value.
-    wp->hash = hash;
+    wp->hash = wp->prehash%table->size;
+    unsigned long hash = wp->hash;
     if(table->array[hash] != NULL){ // Collision case
         table->collisions++;
         addCollisionChainP(wp,&(table->array[hash]));
@@ -84,7 +101,7 @@ int reAddHash(wordPair* wp, strHashTable* table){
             //printf("Resizing\n");  // Uncomment to see each time it resizes during a rehash.
             // resize and rehash.
             int i = table->size;
-            table->size *= 3;
+            table->size *= MULTIPLIER;
             table->array = realloc(table->array, sizeof(collisionChain*)*table->size);
             assert(table->array != NULL);
             for(;i < table->size; i++){
