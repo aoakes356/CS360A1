@@ -17,6 +17,7 @@ wordPairList* newWordPairList(){                        // Initialize a new word
 }
 
 void pushWordPair(wordPair* wp, wordPairList* list){
+    wp->index = list->used;
     list->array[list->used++] = wp;                     // Add the new word pair at the end of the array, increment the 'pointer'
     if(list->used >= list->size-1){                     // Resize by a factor of two, initialize new indices to null.
         list->size *= 2;
@@ -44,6 +45,7 @@ int removeWordPairI(int index, wordPairList* list){
         return 0;
     }
     list->array[index] = list->array[list->used-1];
+    list->array[index]->index = list->used-1;
     list->array[list->used-1] = NULL;
     list->used--;
     return 1;

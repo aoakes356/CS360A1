@@ -13,7 +13,9 @@ wordPair* newWordPair(char* w1, char* w2){ // Expects strings allocated using ma
     
     // Make the two words into one word with a space inbetween to simplify hashing.
     // also more memory efficient since it only needs a single pointer per word pair.
-    concat(&(new->words), w2, concat(&(new->words)," ",concat(&(new->words),w1,STR_SIZE)));
+    int j;
+    for(j = 0; w1[j] != '\0'; j++);
+    concat(&(new->words), w2, concat(&(new->words)," ",concat(&(new->words),w1,STR_SIZE,0),j),j+1);
     new->freq = 1;      // Initial count is one of course;
     return new;
 }
@@ -45,19 +47,18 @@ int compareStr(char* str1, char* str2){ // Assumes null terminated string.
 }
 
 // Concatenation which resizes the string as needed.
-int concat(char** dest, char* src, int destSize){
-    int i,j;
+int concat(char** dest, char* src, int destSize, int destLength){
+    int j;
     assert(*dest != NULL && src != NULL);
-    for(i = 0; (*dest)[i] != '\0'; i++);                           // Get the string length of dest.
     for(j = 0; src[j] != '\0'; j++){
-        if(j+i >= destSize-1){                                      // Need to resize the destination string.
+        if(j+destLength >= destSize-1){                                      // Need to resize the destination string.
             destSize *= 2;
             *dest = (char* )realloc(*dest,destSize*sizeof(char));
             assert(*dest != NULL);
         }
-        (*dest)[j+i] = src[j];
+        (*dest)[j+destLength] = src[j];
     }
-    (*dest)[j+i] = '\0';                                           // Terminate the new string.
+    (*dest)[j+destLength] = '\0';                                           // Terminate the new string.
     return destSize;
 }
 

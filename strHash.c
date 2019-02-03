@@ -22,9 +22,7 @@ unsigned long prehash(char* string, strHashTable* table){
 strHashTable* initHash(){
     strHashTable* new = (strHashTable*)malloc(sizeof(strHashTable));
     new->array = (collisionChain**)malloc(sizeof(collisionChain*)*INITIAL_TABLE_SIZE);
-    for(int i = 0; i < INITIAL_TABLE_SIZE; i++){
-        new->array[i] = NULL;                                       // Initialize table values to NULL.
-    }
+    memset(new->array,'\0',sizeof(collisionChain*)*INITIAL_TABLE_SIZE);
     new->keys = newWordPairList();                                  // use an expandable list of wordPairs to store all the keys for the table.
     assert(new != NULL && new->array != NULL && new->keys != NULL); // Verify the memory was allocated. exit if not.
     new->used = 0;                                                  // Number of elements filled in the array since the last resize.
@@ -47,7 +45,7 @@ wordPair* getWordPairP(wordPair* key, strHashTable* table){
         collisionChain* current = list;
         // Still have to loop through the collision chains and compare the strings (ew).
         do{
-            if(compareStr(current->pair->words, key->words)) return current->pair;
+            if(key->prehash == current->pair->prehash && compareStr(current->pair->words, key->words)) return current->pair;
         }while((current = current->next) != NULL);
         return NULL;
     }
@@ -57,17 +55,16 @@ wordPair* getWordPairP(wordPair* key, strHashTable* table){
 // If the word collides, the hash may resize in order to maintain a certain ratio of collisions to insertions.
 int addHash(wordPair* wp, strHashTable* table){ 
     wordPair* temp;
-    unsigned long prhash = prehash(wp->words, table);
-    wp->prehash = prhash;
-    wp->hash = prhash%table->size;
-    unsigned long hash = wp->hash;
+    wp->prehash = prehash(wp->words, table);
+    wp->hash = wp->prehash%table->size;
     if((temp = getWordPairP(wp, table)) != NULL){
         temp->freq++;
         destroyWordPair(&wp);   // Duplicate, can free;
+        return 0;  
     }else{ 
-        if(table->array[hash] != NULL){ // Collision case
+        if(table->array[wp->hash] != NULL){ // Collision case
             table->collisions++;
-            addCollisionChainP(wp,&(table->array[hash]));
+            addCollisionChainP(wp,&(table->array[wp->hash]));
             if(collisionRate(table) > REHASH_POINT){
                 //printf("Resizing\n");  // Uncomment to see each time it resizes (excluding resizing done during rehash).
                 // resize and rehash.
@@ -75,28 +72,25 @@ int addHash(wordPair* wp, strHashTable* table){
                 table->size *= MULTIPLIER;
                 table->array = realloc(table->array, sizeof(collisionChain*)*table->size);
                 assert(table->array != NULL);
-                for(;i < table->size; i++){
-                    table->array[i] = NULL;
-                }
+                memset(&(table->array[i]),'\0',sizeof(collisionChain*)*(table->size-i));
                 rehash(table);
             }
         }else{
-            table->array[hash] = newCollisionChainP(wp);
+            table->array[wp->hash] = newCollisionChainP(wp);
             table->used++;
         }
         pushWordPair(wp, table->keys);
 
     }
-    return hash;  
+    return wp->hash;  
 }
 // This is a version of the above addHash function, but optomized for rehashing of an existing key.
 // Not meant for use outside of the rehash function.
 int reAddHash(wordPair* wp, strHashTable* table){ 
     wp->hash = wp->prehash%table->size;
-    unsigned long hash = wp->hash;
-    if(table->array[hash] != NULL){ // Collision case
+    if(table->array[wp->hash] != NULL){ // Collision case
         table->collisions++;
-        addCollisionChainP(wp,&(table->array[hash]));
+        addCollisionChainP(wp,&(table->array[wp->hash]));
         if(collisionRate(table) > REHASH_POINT){
             //printf("Resizing\n");  // Uncomment to see each time it resizes during a rehash.
             // resize and rehash.
@@ -104,17 +98,18 @@ int reAddHash(wordPair* wp, strHashTable* table){
             table->size *= MULTIPLIER;
             table->array = realloc(table->array, sizeof(collisionChain*)*table->size);
             assert(table->array != NULL);
-            for(;i < table->size; i++){
+            memset(&(table->array[i]),'\0',sizeof(collisionChain*)*(table->size-i));
+            /*for(;i < table->size; i++){
                 table->array[i] = NULL;
-            }
+            }*/
             rehash(table);
         }
     }else{
-        table->array[hash] = newCollisionChainP(wp);
+        table->array[wp->hash] = newCollisionChainP(wp);
         table->used++;
     }
 
-    return hash;  
+    return wp->hash;  
 }
 
 void rehash(strHashTable* table){
@@ -125,19 +120,18 @@ void rehash(strHashTable* table){
     for(int i = 0; i < table->keys->used; i++){
         currentKey = table->keys->array[i];
         oldHash = currentKey->hash;
-        if(table->array[oldHash] != NULL){
-            assert(removeWordPairCC(&(table->array[oldHash]), currentKey));
-            reAddHash(currentKey,table);
-        }
+        assert(removeWordPairCC(&(table->array[oldHash]), currentKey));
+        reAddHash(currentKey,table);
     }
 
 }
 // Frees ALL memory associated with the hash table.
 void destroyHashTable(strHashTable* table){
-    collisionChain* current;
-    for(int i = 0; i < table->size; i++){
-        if((current = table->array[i]) == NULL) continue;
-        destroyCollisionChain(&current);
+    wordPair* current;
+    for(int i = 0; i < table->keys->used; i++){
+        current = table->keys->array[i];
+        if(current == NULL) continue;
+        destroyCollisionChain(&(table->array[current->hash]));
     }
     destroyWordPairList(&(table->keys));
     free(table->array);
@@ -152,6 +146,7 @@ double collisionRate(strHashTable* table){
        the number of strings that must be rehashed (That is if speed is a priority).
     */
     if(table->used > 0) return ((double)table->collisions)/((double)(table->size));
+    //return table->collisions;
     return 0.0;
 
 }

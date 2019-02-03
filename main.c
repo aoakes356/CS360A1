@@ -71,7 +71,7 @@ int main(int argc, char** argv){
         printTopH(table->keys->used-1, table);  // If not print them all.
     }
 
-    //printf("Collisions: %i, Table Size: %lu\n",table->collisions, table->size); // Uncomment to see collisions and table size.
+    printf("Collisions: %i, Table Size: %lu\n",table->collisions, table->size); // Uncomment to see collisions and table size.
     destroyHashTable(table);
     return 0;
 }

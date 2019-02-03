@@ -3,7 +3,7 @@
 
 
 #define INITIAL_TABLE_SIZE 1   // 47 is particularly fast for some reason. 
-#define STR_SIZE 16 // Determines the initial size of all word pairs. 
+#define STR_SIZE 12 // Determines the initial size of all word pairs. 
 #define REHASH_POINT .1 // this seems to be the best rate despite resulting in more collisions, rehashing is still more expensive.
 #define MULTIPLIER 6
 #include <stdlib.h> // For typedef
@@ -14,6 +14,7 @@ typedef struct wordPair{
     int freq;    
     unsigned long hash;
     unsigned long prehash;
+    int index;
 } wordPair;
 
 // An expandable array which stores word pairs.
@@ -71,7 +72,7 @@ wordPair* getWordPair(char*, strHashTable*);
 
 // concatenate two strings together, resizing the destination string as needed.
 // The given destination string is expected to be allocated using malloc().
-int concat(char** dest, char* src, int destSize);
+int concat(char** dest, char* src, int destSize, int destLength);
 
 // allocate a new wordpair structure.
 wordPair* newWordPair(char*, char*); // Expects strings allocated using malloc
